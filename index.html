@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MeeTempo Admin — ComptaFlow Dashboard</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0c0e14;
+  --surface: #14171f;
+  --surface2: #1a1e28;
+  --border: #252a36;
+  --text: #e4e6ec;
+  --text-dim: #7a8194;
+  --accent: #6c5ce7;
+  --fr: #3b82f6;
+  --uk: #f43f5e;
+  --green: #10b981;
+  --amber: #f59e0b;
+  --radius: 12px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ===== LOGIN ===== */
+#login-screen {
+  display: flex; align-items: center; justify-content: center; min-height: 100vh;
+  background: radial-gradient(ellipse at 30% 20%, rgba(108,92,231,0.08) 0%, transparent 60%),
+              radial-gradient(ellipse at 70% 80%, rgba(244,63,94,0.06) 0%, transparent 60%), var(--bg);
+}
+.login-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  padding: 48px; width: 400px; max-width: 90vw;
+}
+.login-card h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+.login-card .sub { color: var(--text-dim); font-size: 14px; margin-bottom: 32px; }
+.login-card label { display: block; font-size: 13px; font-weight: 500; color: var(--text-dim); margin-bottom: 6px; }
+.login-card input {
+  width: 100%; padding: 12px 14px; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); font-family: inherit; font-size: 14px; margin-bottom: 18px;
+  transition: border-color .2s;
+}
+.login-card input:focus { outline: none; border-color: var(--accent); }
+.login-card button {
+  width: 100%; padding: 13px; background: var(--accent); color: #fff; border: none;
+  border-radius: 8px; font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+  transition: transform .15s, opacity .15s;
+}
+.login-card button:hover { opacity: .9; transform: translateY(-1px); }
+.login-error { color: var(--uk); font-size: 13px; margin-bottom: 12px; display: none; }
+
+/* ===== DASHBOARD ===== */
+#dashboard { display: none; }
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 32px; border-bottom: 1px solid var(--border); background: var(--surface);
+}
+.topbar h1 { font-size: 18px; font-weight: 700; letter-spacing: -.3px; }
+.topbar h1 span { color: var(--accent); }
+.topbar-right { display: flex; align-items: center; gap: 16px; }
+.btn-refresh {
+  padding: 8px 16px; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); font-family: inherit; font-size: 13px;
+  cursor: pointer; transition: background .2s;
+}
+.btn-refresh:hover { background: var(--border); }
+.btn-logout {
+  padding: 8px 16px; background: transparent; border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text-dim); font-family: inherit; font-size: 13px;
+  cursor: pointer;
+}
+.btn-logout:hover { color: var(--uk); border-color: var(--uk); }
+
+.main { padding: 28px 32px; max-width: 1400px; margin: 0 auto; }
+
+/* KPI Cards */
+.kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px; }
+.kpi {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 20px 22px; position: relative; overflow: hidden;
+}
+.kpi::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+}
+.kpi.kpi-total::before { background: var(--accent); }
+.kpi.kpi-fr::before { background: var(--fr); }
+.kpi.kpi-uk::before { background: var(--uk); }
+.kpi.kpi-green::before { background: var(--green); }
+.kpi .kpi-label { font-size: 12px; font-weight: 500; color: var(--text-dim); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 8px; }
+.kpi .kpi-value { font-size: 28px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+.kpi .kpi-sub { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+
+/* Tabs */
+.tabs { display: flex; gap: 4px; margin-bottom: 24px; background: var(--surface); border-radius: 10px; padding: 4px; border: 1px solid var(--border); width: fit-content; }
+.tab {
+  padding: 10px 20px; border-radius: 8px; border: none; background: transparent;
+  color: var(--text-dim); font-family: inherit; font-size: 14px; font-weight: 500;
+  cursor: pointer; transition: all .2s;
+}
+.tab.active { background: var(--accent); color: #fff; }
+.tab:hover:not(.active) { color: var(--text); }
+
+/* Sections */
+.section { margin-bottom: 32px; }
+.section-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.badge-fr { background: rgba(59,130,246,.15); color: var(--fr); padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.badge-uk { background: rgba(244,63,94,.15); color: var(--uk); padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+
+/* Dual panels */
+.dual { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 900px) { .dual { grid-template-columns: 1fr; } }
+
+/* Chart container */
+.chart-box {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 24px;
+}
+.chart-box canvas { max-height: 300px; }
+
+/* Table */
+.table-wrap {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden;
+}
+.table-wrap table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.table-wrap th {
+  text-align: left; padding: 12px 16px; background: var(--surface2);
+  font-weight: 600; color: var(--text-dim); font-size: 11px; text-transform: uppercase; letter-spacing: .6px;
+  border-bottom: 1px solid var(--border);
+}
+.table-wrap td { padding: 11px 16px; border-bottom: 1px solid var(--border); }
+.table-wrap tr:last-child td { border-bottom: none; }
+.table-wrap tr:hover td { background: rgba(108,92,231,.04); }
+
+/* Status badges */
+.status { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; display: inline-block; }
+.status-active { background: rgba(16,185,129,.12); color: var(--green); }
+.status-trialing { background: rgba(108,92,231,.12); color: var(--accent); }
+.status-canceled { background: rgba(122,129,148,.12); color: var(--text-dim); }
+.status-past_due { background: rgba(245,158,11,.12); color: var(--amber); }
+
+.plan-badge { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 500; }
+
+/* Events */
+.event-item {
+  display: flex; align-items: center; gap: 12px; padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.event-item:last-child { border-bottom: none; }
+.event-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.event-dot.fr { background: var(--fr); }
+.event-dot.uk { background: var(--uk); }
+.event-text { font-size: 13px; flex: 1; }
+.event-date { font-size: 11px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
+
+/* Loading */
+.loading-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(12,14,20,.85);
+  display: flex; align-items: center; justify-content: center; z-index: 999;
+}
+.spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Filters */
+.filters { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+.filter-btn {
+  padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface);
+  color: var(--text-dim); font-family: inherit; font-size: 12px; cursor: pointer; transition: all .2s;
+}
+.filter-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(108,92,231,.08); }
+.filter-btn:hover:not(.active) { border-color: var(--text-dim); }
+
+.empty-state { text-align: center; padding: 48px; color: var(--text-dim); font-size: 14px; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <h1>🔒 MeeTempo Admin</h1>
+    <p class="sub">ComptaFlow Dashboard — FR & UK</p>
+    <div class="login-error" id="login-error">Invalid credentials</div>
+    <label>Email</label>
+    <input type="email" id="login-email" placeholder="admin@meetempo.com" autocomplete="email">
+    <label>Password</label>
+    <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+    <button onclick="doLogin()">Sign in</button>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <div class="topbar">
+    <h1>📊 <span>MeeTempo</span> Admin</h1>
+    <div class="topbar-right">
+      <span id="last-update" style="font-size: 12px; color: var(--text-dim);"></span>
+      <button class="btn-refresh" onclick="loadAll()">↻ Refresh</button>
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- KPI -->
+    <div class="kpi-row" id="kpi-row"></div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" data-tab="overview" onclick="switchTab('overview')">📊 Overview</button>
+      <button class="tab" data-tab="forecast" onclick="switchTab('forecast')">📈 Forecast</button>
+      <button class="tab" data-tab="customers" onclick="switchTab('customers')">👥 Customers</button>
+      <button class="tab" data-tab="events" onclick="switchTab('events')">🔔 Events</button>
+    </div>
+
+    <!-- Overview Tab -->
+    <div class="tab-content" id="tab-overview">
+      <div class="dual">
+        <div class="chart-box">
+          <div class="section-title">Clients by Market</div>
+          <canvas id="chart-markets"></canvas>
+        </div>
+        <div class="chart-box">
+          <div class="section-title">Plans Distribution</div>
+          <canvas id="chart-plans"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Forecast Tab -->
+    <div class="tab-content" id="tab-forecast" style="display:none;">
+      <div class="kpi-row" id="forecast-kpi"></div>
+      <div class="chart-box">
+        <div class="section-title">Revenue Forecast (12 months)</div>
+        <canvas id="chart-forecast"></canvas>
+      </div>
+    </div>
+
+    <!-- Customers Tab -->
+    <div class="tab-content" id="tab-customers" style="display:none;">
+      <div class="filters">
+        <button class="filter-btn active" data-filter="all" onclick="filterCustomers('all')">All</button>
+        <button class="filter-btn" data-filter="FR" onclick="filterCustomers('FR')"><span class="badge-fr">FR</span></button>
+        <button class="filter-btn" data-filter="UK" onclick="filterCustomers('UK')"><span class="badge-uk">UK</span></button>
+        <button class="filter-btn" data-filter="active" onclick="filterCustomers('active')">Active</button>
+        <button class="filter-btn" data-filter="trialing" onclick="filterCustomers('trialing')">Trial</button>
+        <button class="filter-btn" data-filter="past_due" onclick="filterCustomers('past_due')">Past due</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Market</th>
+              <th>Email</th>
+              <th>Plan</th>
+              <th>MRR</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th>Expires / Trial end</th>
+            </tr>
+          </thead>
+          <tbody id="customers-tbody"></tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="customers-empty" style="display:none;">No customers found</div>
+    </div>
+
+    <!-- Events Tab -->
+    <div class="tab-content" id="tab-events" style="display:none;">
+      <div class="table-wrap" id="events-list"></div>
+      <div class="empty-state" id="events-empty" style="display:none;">No recent events</div>
+    </div>
+  </div>
+</div>
+
+<!-- Loading -->
+<div class="loading-overlay" id="loading" style="display:none;">
+  <div class="spinner"></div>
+</div>
+
+<script>
+const API = 'https://api-admin.meetempo.com';
+let token = localStorage.getItem('mt_token') || null;
+let statsData = null, customersData = null, forecastData = null;
+let currentFilter = 'all';
+
+// ===== AUTH =====
+async function doLogin() {
+  const email = document.getElementById('login-email').value;
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+
+  try {
+    const res = await fetch(API + '/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (data.success && data.token) {
+      token = data.token;
+      localStorage.setItem('mt_token', token);
+      showDashboard();
+    } else {
+      errEl.textContent = data.error || 'Invalid credentials';
+      errEl.style.display = 'block';
+    }
+  } catch (e) {
+    errEl.textContent = 'Connection error';
+    errEl.style.display = 'block';
+  }
+}
+
+function logout() {
+  token = null;
+  localStorage.removeItem('mt_token');
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+async function apiFetch(endpoint) {
+  const res = await fetch(API + endpoint, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (res.status === 401) { logout(); return null; }
+  return res.json();
+}
+
+// ===== INIT =====
+async function showDashboard() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  await loadAll();
+}
+
+async function loadAll() {
+  document.getElementById('loading').style.display = 'flex';
+  try {
+    [statsData, customersData, forecastData] = await Promise.all([
+      apiFetch('/api/stats'),
+      apiFetch('/api/customers'),
+      apiFetch('/api/forecast'),
+    ]);
+    if (!statsData) return;
+    renderKPIs();
+    renderCharts();
+    renderCustomers();
+    renderEvents();
+    renderForecast();
+    document.getElementById('last-update').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+  } catch (e) {
+    console.error('Load error:', e);
+  }
+  document.getElementById('loading').style.display = 'none';
+}
+
+// ===== TABS =====
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+  document.getElementById('tab-' + tab).style.display = 'block';
+}
+
+// ===== KPIs =====
+function renderKPIs() {
+  const s = statsData;
+  document.getElementById('kpi-row').innerHTML = `
+    <div class="kpi kpi-total">
+      <div class="kpi-label">Total Clients</div>
+      <div class="kpi-value">${s.total.all_clients}</div>
+      <div class="kpi-sub">${s.total.active} active · ${s.total.trialing} trial</div>
+    </div>
+    <div class="kpi kpi-total">
+      <div class="kpi-label">MRR Total</div>
+      <div class="kpi-value">€${s.total.mrr.toLocaleString()}</div>
+      <div class="kpi-sub">ARR: €${s.total.arr.toLocaleString()}</div>
+    </div>
+    <div class="kpi kpi-fr">
+      <div class="kpi-label">🇫🇷 France</div>
+      <div class="kpi-value">${s.FR.all_clients}</div>
+      <div class="kpi-sub">MRR: €${s.FR.mrr} · ${s.FR.active} active · ${s.FR.trialing} trial</div>
+    </div>
+    <div class="kpi kpi-uk">
+      <div class="kpi-label">🇬🇧 United Kingdom</div>
+      <div class="kpi-value">${s.UK.all_clients}</div>
+      <div class="kpi-sub">MRR: £${s.UK.mrr} · ${s.UK.active} active · ${s.UK.trialing} trial</div>
+    </div>
+    <div class="kpi kpi-green">
+      <div class="kpi-label">Trial Conversion</div>
+      <div class="kpi-value">${s.total.trial_conversion}%</div>
+      <div class="kpi-sub">${s.total.canceled} cancelled · ${s.total.past_due} past due</div>
+    </div>
+    <div class="kpi kpi-total">
+      <div class="kpi-label">Plans</div>
+      <div class="kpi-value plan-badge">S:${s.plans.standard} P:${s.plans.plus} V:${s.plans.vip}</div>
+      <div class="kpi-sub">Standard · Plus · VIP</div>
+    </div>
+  `;
+}
+
+// ===== CHARTS =====
+let chartMarkets, chartPlans, chartForecast;
+
+function renderCharts() {
+  const s = statsData;
+  const chartOpts = { responsive: true, plugins: { legend: { labels: { color: '#7a8194', font: { family: 'DM Sans' } } } } };
+
+  if (chartMarkets) chartMarkets.destroy();
+  chartMarkets = new Chart(document.getElementById('chart-markets'), {
+    type: 'doughnut',
+    data: {
+      labels: ['🇫🇷 FR Active', '🇫🇷 FR Trial', '🇬🇧 UK Active', '🇬🇧 UK Trial'],
+      datasets: [{ data: [s.FR.active, s.FR.trialing, s.UK.active, s.UK.trialing], backgroundColor: ['#3b82f6', '#93c5fd', '#f43f5e', '#fda4af'], borderWidth: 0 }],
+    },
+    options: { ...chartOpts, cutout: '65%' },
+  });
+
+  if (chartPlans) chartPlans.destroy();
+  chartPlans = new Chart(document.getElementById('chart-plans'), {
+    type: 'bar',
+    data: {
+      labels: ['Standard', 'Plus', 'VIP'],
+      datasets: [{ label: 'Subscribers', data: [s.plans.standard, s.plans.plus, s.plans.vip], backgroundColor: ['#6c5ce7', '#3b82f6', '#f59e0b'], borderRadius: 6, borderSkipped: false }],
+    },
+    options: { ...chartOpts, scales: { y: { beginAtZero: true, ticks: { color: '#7a8194', stepSize: 1 }, grid: { color: '#252a36' } }, x: { ticks: { color: '#7a8194' }, grid: { display: false } } } },
+  });
+}
+
+// ===== FORECAST =====
+function renderForecast() {
+  if (!forecastData) return;
+  const f = forecastData;
+
+  document.getElementById('forecast-kpi').innerHTML = `
+    <div class="kpi kpi-total">
+      <div class="kpi-label">Current MRR</div>
+      <div class="kpi-value">€${f.current_mrr.total}</div>
+      <div class="kpi-sub">FR: €${f.current_mrr.FR} · UK: £${f.current_mrr.UK}</div>
+    </div>
+    <div class="kpi kpi-green">
+      <div class="kpi-label">Active Trials</div>
+      <div class="kpi-value">${f.trialing.FR + f.trialing.UK}</div>
+      <div class="kpi-sub">FR: ${f.trialing.FR} (€${f.trialing.potential_mrr_FR}) · UK: ${f.trialing.UK} (£${f.trialing.potential_mrr_UK})</div>
+    </div>
+    <div class="kpi kpi-total">
+      <div class="kpi-label">Projected ARR</div>
+      <div class="kpi-value">€${(f.current_mrr.total * 12).toLocaleString()}</div>
+      <div class="kpi-sub">Based on current MRR × 12</div>
+    </div>
+  `;
+
+  if (chartForecast) chartForecast.destroy();
+  chartForecast = new Chart(document.getElementById('chart-forecast'), {
+    type: 'line',
+    data: {
+      labels: f.forecast.map(m => m.month),
+      datasets: [
+        { label: 'Total MRR', data: f.forecast.map(m => m.total), borderColor: '#6c5ce7', backgroundColor: 'rgba(108,92,231,.1)', fill: true, tension: .3, pointRadius: 4 },
+        { label: 'FR', data: f.forecast.map(m => m.FR), borderColor: '#3b82f6', borderDash: [5, 5], tension: .3, pointRadius: 3 },
+        { label: 'UK', data: f.forecast.map(m => m.UK), borderColor: '#f43f5e', borderDash: [5, 5], tension: .3, pointRadius: 3 },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { labels: { color: '#7a8194', font: { family: 'DM Sans' } } } },
+      scales: {
+        y: { beginAtZero: true, ticks: { color: '#7a8194', callback: v => '€' + v }, grid: { color: '#252a36' } },
+        x: { ticks: { color: '#7a8194' }, grid: { display: false } },
+      },
+    },
+  });
+}
+
+// ===== CUSTOMERS =====
+function renderCustomers() {
+  if (!customersData?.customers) return;
+  filterCustomers(currentFilter);
+}
+
+function filterCustomers(filter) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.classList.toggle('active',
+      b.dataset.filter === filter ||
+      (filter === 'all' && b.dataset.filter === 'all')
+    );
+  });
+
+  let list = customersData.customers;
+  if (filter === 'FR' || filter === 'UK') list = list.filter(c => c.market === filter);
+  else if (filter !== 'all') list = list.filter(c => c.status === filter);
+
+  const tbody = document.getElementById('customers-tbody');
+  const empty = document.getElementById('customers-empty');
+
+  if (!list.length) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = list.map(c => `
+    <tr>
+      <td><span class="badge-${c.market.toLowerCase()}">${c.market === 'FR' ? '🇫🇷 FR' : '🇬🇧 UK'}</span></td>
+      <td>${esc(c.email)}</td>
+      <td><span class="plan-badge">${c.plan.toUpperCase()}</span></td>
+      <td>${c.currency}${c.monthly}</td>
+      <td><span class="status status-${c.status}">${c.status}</span></td>
+      <td>${fmtDate(c.created)}</td>
+      <td>${c.trial_end ? '⏱ ' + fmtDate(c.trial_end) : fmtDate(c.current_period_end)}</td>
+    </tr>
+  `).join('');
+}
+
+// ===== EVENTS =====
+function renderEvents() {
+  if (!statsData?.recent_events?.length) {
+    document.getElementById('events-list').innerHTML = '';
+    document.getElementById('events-empty').style.display = 'block';
+    return;
+  }
+  document.getElementById('events-empty').style.display = 'none';
+
+  document.getElementById('events-list').innerHTML = statsData.recent_events.map(e => `
+    <div class="event-item">
+      <div class="event-dot ${e.market.toLowerCase()}"></div>
+      <div class="event-text">
+        <span class="badge-${e.market.toLowerCase()}">${e.market}</span>
+        New <strong>${e.plan}</strong> subscription
+        <span style="color:var(--text-dim);">— ${esc(e.email)}</span>
+      </div>
+      <div class="event-date">${fmtDate(e.date)}</div>
+    </div>
+  `).join('');
+}
+
+// ===== UTILS =====
+function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+// ===== ENTER KEY =====
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('login-screen').style.display !== 'none') doLogin();
+});
+
+// ===== AUTO LOGIN =====
+if (token) showDashboard();
+</script>
+</body>
+</html>
